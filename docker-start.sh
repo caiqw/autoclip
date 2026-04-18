@@ -95,6 +95,13 @@ check_environment() {
     else
         log_success ".env文件存在"
     fi
+
+    # Docker 构建阶段 apt 镜像（由 docker-compose 读取 .env 中的 DOCKER_APT_MIRROR）
+    if [[ -f ".env" ]] && grep -qE '^DOCKER_APT_MIRROR=[^[:space:]#]+' .env 2>/dev/null; then
+        log_success "已配置 DOCKER_APT_MIRROR（构建时将使用国内 Debian 源加速）"
+    else
+        log_warning "未设置 DOCKER_APT_MIRROR：若 apt 下载很慢，可在 .env 中加入 DOCKER_APT_MIRROR=mirrors.aliyun.com 后重新构建"
+    fi
     
     # 检查必要的配置
     if ! grep -q "API_DASHSCOPE_API_KEY" .env || grep -q "API_DASHSCOPE_API_KEY=$" .env; then
@@ -218,6 +225,9 @@ show_help() {
     echo "  $0          # 启动生产环境"
     echo "  $0 dev      # 启动开发环境"
     echo "  $0 help     # 显示帮助"
+    echo ""
+    echo "构建加速（可选）:"
+    echo "  在 .env 中设置 DOCKER_APT_MIRROR=mirrors.aliyun.com 可加速镜像内 apt 下载"
 }
 
 # 处理参数

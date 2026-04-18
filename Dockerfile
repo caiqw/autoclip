@@ -4,10 +4,17 @@
 # 第一阶段：构建前端
 FROM node:18-slim AS frontend-builder
 
+# 国内构建加速：docker compose 构建时传入 DOCKER_APT_MIRROR=mirrors.aliyun.com（见 env.example）
+ARG APT_MIRROR=
 WORKDIR /app/frontend
 
 # 安装必要的系统依赖
-RUN apt-get update && apt-get install -y \
+RUN set -eux; \
+    if [ -n "${APT_MIRROR}" ]; then \
+      find /etc/apt \( -name '*.sources' -o -name 'sources.list' \) -type f \
+        -exec sed -i "s|deb.debian.org|${APT_MIRROR}|g; s|security.debian.org|${APT_MIRROR}|g" {} +; \
+    fi; \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
@@ -28,6 +35,8 @@ RUN npm run build
 # 第二阶段：构建后端
 FROM python:3.9-slim AS backend-builder
 
+ARG APT_MIRROR=
+
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -37,7 +46,12 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
 
 # 安装系统依赖
-RUN apt-get update && apt-get install -y \
+RUN set -eux; \
+    if [ -n "${APT_MIRROR}" ]; then \
+      find /etc/apt \( -name '*.sources' -o -name 'sources.list' \) -type f \
+        -exec sed -i "s|deb.debian.org|${APT_MIRROR}|g; s|security.debian.org|${APT_MIRROR}|g" {} +; \
+    fi; \
+    apt-get update && apt-get install -y \
     build-essential \
     curl \
     ffmpeg \
@@ -52,6 +66,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 第三阶段：最终镜像
 FROM python:3.9-slim
 
+ARG APT_MIRROR=
+
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -61,7 +77,12 @@ ENV PYTHONPATH=/app
 RUN groupadd -r autoclip && useradd -r -g autoclip autoclip
 
 # 安装运行时依赖
-RUN apt-get update && apt-get install -y \
+RUN set -eux; \
+    if [ -n "${APT_MIRROR}" ]; then \
+      find /etc/apt \( -name '*.sources' -o -name 'sources.list' \) -type f \
+        -exec sed -i "s|deb.debian.org|${APT_MIRROR}|g; s|security.debian.org|${APT_MIRROR}|g" {} +; \
+    fi; \
+    apt-get update && apt-get install -y \
     ffmpeg \
     curl \
     && rm -rf /var/lib/apt/lists/* \

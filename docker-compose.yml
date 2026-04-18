@@ -1,3 +1,10 @@
+# 镜像构建参数（Compose 会从项目目录 .env 读取变量用于替换）
+x-autoclip-docker-build: &autoclip_docker_build
+  context: .
+  dockerfile: Dockerfile
+  args:
+    APT_MIRROR: ${DOCKER_APT_MIRROR:-}
+
 services:
   # Redis服务
   redis:
@@ -18,8 +25,7 @@ services:
   # 主应用服务
   autoclip:
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *autoclip_docker_build
     container_name: autoclip-app
     restart: unless-stopped
     ports:
@@ -48,8 +54,7 @@ services:
   # Celery Worker服务
   celery-worker:
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *autoclip_docker_build
     container_name: autoclip-celery-worker
     restart: unless-stopped
     volumes:
@@ -72,8 +77,7 @@ services:
   # Celery Beat调度器
   celery-beat:
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *autoclip_docker_build
     container_name: autoclip-celery-beat
     restart: unless-stopped
     volumes:
@@ -95,8 +99,7 @@ services:
   # Flower监控服务（可选）
   flower:
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *autoclip_docker_build
     container_name: autoclip-flower
     restart: unless-stopped
     ports:
